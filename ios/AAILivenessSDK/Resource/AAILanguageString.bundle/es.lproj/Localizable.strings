@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "Parpadee.";
+"pls_open_eye" = "por favor abre tus ojos";
 "pls_open_mouth" = "Abra la boca y ciérrela.";
 "pls_turn_head" = "Gire la cabeza hacia la izquierda o hacia la derecha (<30 grados).";
 "pls_hold_phone_v" = "Mantenga verticalmente el móvil.";

@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "Please blink";
+"pls_open_eye" = "Please open your eyes";
 "pls_open_mouth" = "Please open your mouth and then close";
 "pls_turn_head" = "Please turn head left or right (<30 degrees)";
 "pls_hold_phone_v" = "Please hold the phone upright";

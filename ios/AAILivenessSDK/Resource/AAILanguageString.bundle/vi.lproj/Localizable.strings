@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "Xin vui lòng chớp mắt";
+"pls_open_eye" = "làm ơn hãy mở mắt ra";
 "pls_open_mouth" = "Xin vui lòng mở miệng, sau đó đóng miệng lại";
 "pls_turn_head" = "Vui lòng quay đầu sang phải hoặc trái (<30°)";
 "pls_hold_phone_v" = "Xin vui lòng giữ điện thoại thẳng đứng";

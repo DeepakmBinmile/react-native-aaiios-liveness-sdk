@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "请眨眼";
+"pls_open_eye" = "请睁开眼";
 "pls_open_mouth" = "请张嘴，然后合拢";
 "pls_turn_head" = "请左右缓慢摇头（<30°）";
 "pls_hold_phone_v" = "请竖直手机";

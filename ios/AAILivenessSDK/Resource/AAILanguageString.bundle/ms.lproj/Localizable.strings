@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "Sila kelip mata anda";
+"pls_open_eye" = "sila buka mata anda";
 "pls_open_mouth" = "Sila buka mulut anda dan kemudian tutup";
 "pls_turn_head" = "Sila pusingkan kepala anda ke kiri atau kanan (Kurangkan 30 Darjah)";
 "pls_hold_phone_v" = "Sila pegang telefon anda dengan tegak";

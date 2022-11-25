@@ -6,36 +6,24 @@
 //
 
 #import "RNAAILivenessView.h"
-@import AAILivenessSDK;
 #import "AAIHUD.h"
-#import "AAILivenessUtil.h"
 #import <AVFoundation/AVFoundation.h>
-#import "RNAAILivenessSDKEvent.h"
 
 @interface RNAAILivenessView()<AAILivenessWrapDelegate>
 {
-    UIButton *_backBtn;
-    UILabel *_stateLabel;
-    UIImageView *_stateImgView;
-    //Voice
-    UIButton *_voiceBtn;
-    //Time label
-    UILabel *_timeLabel;
-    CGRect _roundViewFrame;
-    
     NSString *_pre_key;
     
     BOOL _isReady;
     BOOL _isRequestingAuth;
     BOOL _requestAuthSucceed;
+    BOOL _isFlowFinished;
 }
-@property(nonatomic, strong) AAILivenessWrapView *wrapView;
+
 @property(nonatomic) BOOL isRequestingAuth;
 @property(nonatomic) BOOL requestAuthSucceed;
 @property(nonatomic) BOOL requestAuthComplete;
 @property(nonatomic) BOOL requestAuthCached;
 @property(nonatomic) BOOL hasPortraitDirection;
-@property(nonatomic) AAILivenessUtil *util;
 
 @property(nonatomic) NSTimeInterval prepareStartTime;
 @property(nonatomic) NSTimeInterval authRequestCostTime;
@@ -50,6 +38,8 @@
 {
     self = [super init];
     if (self) {
+        _showHUD = YES;
+        _detectPhonePortraitDirection = YES;
         _prepareTimeoutInterval = 10;
         [self rnViewDidLoad];
     }
@@ -57,27 +47,6 @@
 }
 
 # pragma mark - Property
-- (void)setDetectionActions:(NSArray<NSString *> *)detectionActions
-{
-    if (detectionActions != nil && detectionActions.count > 0) {
-        _detectionActions = [detectionActions copy];
-        if (_wrapView != nil) {
-            NSMutableArray *tmpArray = [[NSMutableArray alloc] init];
-            for (NSString *action in _detectionActions) {
-                if ([action isEqualToString:@"AAIDetectionTypeMouth"]) {
-                    [tmpArray addObject:@(AAIDetectionTypeMouth)];
-                } else if ([action isEqualToString:@"AAIDetectionTypePosYaw"]) {
-                    [tmpArray addObject:@(AAIDetectionTypePosYaw)];
-                } else if ([action isEqualToString:@"AAIDetectionTypeBlink"]) {
-                    [tmpArray addObject:@(AAIDetectionTypeBlink)];
-                }
-            }
-            _wrapView.detectionActions = tmpArray;
-        }
-    } else {
-        _detectionActions = nil;
-    }
-}
 
 # pragma mark - Style
 - (void)setBackgroundColor:(UIColor *)backgroundColor
@@ -87,39 +56,29 @@
 }
 
 # pragma mark - UI
-
-- (void)rnViewDidLoad
+- (void)livenessWrapViewDidLoad:(AAILivenessWrapView *)wrapView
 {
-    _pre_key = nil;
-    _isReady = NO;
-    _isRequestingAuth = NO;
-    _requestAuthSucceed = NO;
-    _requestAuthComplete = NO;
-    _requestAuthCached = NO;
-    _showHUD = YES;
-    
-    _util = [[AAILivenessUtil alloc] init];
-    
-    // Config model file path
-    NSString *modelPath = [[NSBundle mainBundle] pathForResource:@"AAIModel.bundle" ofType:NULL];
-    if (modelPath == NULL) {
-        modelPath = [[NSBundle bundleForClass:[self class]] pathForResource:@"AAIModel.bundle" ofType:NULL];
+    if (self.detectionActions != NULL && self.detectionActions.count > 0) {
+        NSMutableArray *tmpArray = [[NSMutableArray alloc] init];
+        for (NSString *action in _detectionActions) {
+            if ([action isEqualToString:@"AAIDetectionTypeMouth"]) {
+                [tmpArray addObject:@(AAIDetectionTypeMouth)];
+            } else if ([action isEqualToString:@"AAIDetectionTypePosYaw"]) {
+                [tmpArray addObject:@(AAIDetectionTypePosYaw)];
+            } else if ([action isEqualToString:@"AAIDetectionTypeBlink"]) {
+                [tmpArray addObject:@(AAIDetectionTypeBlink)];
+            }
+        }
+        
+        wrapView.detectionActions = [tmpArray copy];
     }
-    if (modelPath == NULL) {
-        NSLog(@"ERROR: AAIModel.bundle Not Found!");
-        return;
-    }
-    [AAILivenessSDK configModelBundlePath: modelPath];
     
-    UIView *sv = self;
-    AAILivenessWrapView *wrapView = [[AAILivenessWrapView alloc] init];
-    [sv addSubview:wrapView];
     /*
     //Custom UI
     wrapView.backgroundColor = [UIColor grayColor];
     wrapView.roundBorderView.layer.borderColor = [UIColor redColor].CGColor;
     wrapView.roundBorderView.layer.borderWidth = 2;
-      
+     
     //Custom corner radius and the shape of the preview area
     CGFloat cornerRadius = 20;
     wrapView.roundBorderView.layer.cornerRadius = cornerRadius;
@@ -127,23 +86,22 @@
         UIBezierPath *squarePath = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, avatarPreviewSize.width, avatarPreviewSize.width) cornerRadius:cornerRadius];
         [originRectPath appendPath: [squarePath bezierPathByReversingPath]];
     };
+    
+     //Custom preview area margin top
+     wrapView.configAvatarPreviewMarginTop = ^CGFloat(CGRect wrapViewFrame) {
+         return 64;
+     };
      
-    //Custom preview area margin top
-    wrapView.configAvatarPreviewMarginTop = ^CGFloat(CGRect wrapViewFrame) {
-        return 64;
-    };
-      
-    //Custom preview area width
-    wrapView.configAvatarPreviewWidth = ^CGFloat(CGRect wrapViewFrame) {
-        return 300;
-    };
+     //Custom preview area width
+     wrapView.configAvatarPreviewWidth = ^CGFloat(CGRect wrapViewFrame) {
+         return 300;
+     };
      */
-    /*
-    //You can custom detectionActions
-    wrapView.detectionActions = @[@(AAIDetectionTypeMouth), @(AAIDetectionTypePosYaw), @(AAIDetectionTypeBlink)];
-     */
-    wrapView.wrapDelegate = self;
-    _wrapView = wrapView;
+}
+
+- (void)loadAdditionalUI
+{
+    UIView *sv = self;
     
     //Detect state label
     UILabel *stateLabel = [[UILabel alloc] init];
@@ -174,37 +132,23 @@
     _voiceBtn = voiceBtn;
     
     //Timeout interval label
+    NSTimeInterval actionTimeout = _actionTimeoutInterval;
+    [AAILivenessSDK configActionTimeoutSeconds:actionTimeout];
+    
     _timeLabel = [[UILabel alloc] init];
     _timeLabel.font = [UIFont systemFontOfSize:14];
     _timeLabel.textColor = [UIColor colorWithRed:(0x36/255.f) green:(0x36/255.f) blue:(0x36/255.f) alpha:1];
-    _timeLabel.text = [NSString stringWithFormat:@"%d S", aai_timeout_interval];
+    _timeLabel.text = [NSString stringWithFormat:@"%.f S", actionTimeout];
     _timeLabel.textAlignment = NSTextAlignmentCenter;
     [sv addSubview:_timeLabel];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(restartDetection) name:@"kAAIRestart" object:nil];
-    [[AVAudioSession sharedInstance] addObserver:self forKeyPath:@"outputVolume" options:NSKeyValueObservingOptionNew context:nil];
-    
-    [_util saveCurrBrightness];
-    
     _timeLabel.hidden = YES;
     _voiceBtn.hidden = YES;
-    
-    [self startPrepareStageTimer];
-    [self startCamera];
 }
 
-- (void)rnViewDidLayoutSubviews
+- (void)layoutAdditionalUI
 {
-    // Do not modify begin
-    CGRect rect = self.frame;
-    _wrapView.frame = rect;
-    [_wrapView setNeedsLayout];
-    [_wrapView layoutIfNeeded];
-    
-    CGSize size = rect.size;
-    CGRect tmpFrame = _wrapView.roundBorderView.frame;
-    _roundViewFrame = [_wrapView.roundBorderView convertRect:tmpFrame toView:self];
-    // Do not modify end
+    CGSize size = self.frame.size;
     
     //top
     CGFloat top = 0, marginLeft = 20, marginTop = 20;
@@ -212,6 +156,11 @@
         top = self.safeAreaInsets.top;
     } else {
         top = [UIApplication sharedApplication].statusBarFrame.size.height;
+    }
+    
+    //Back button
+    if (_backBtn) {
+        _backBtn.frame = CGRectMake(marginLeft, top + marginTop, 40, 40);
     }
     
     //State image
@@ -236,12 +185,107 @@
     _voiceBtn.center = CGPointMake(_timeLabel.center.x, CGRectGetMaxY(_timeLabel.frame)+20);
 }
 
+- (void)livenessWrapViewWillLayout:(AAILivenessWrapView *)wrapView
+{
+    /*
+    // Custom preview frame and avatar preview area
+    CGRect rect = self.view.frame;
+    wrapView.currPreviewFrame = CGRectMake(0, 0, rect.size.width, rect.size.height);
+    
+    CGFloat marginLeft = 20;
+    CGFloat marginTop = 50;
+    CGFloat avatarPreviewWidth = (rect.size.width - 2 * marginLeft);
+    wrapView.currAvatarPreviewArea = CGRectMake(marginLeft, marginTop, avatarPreviewWidth, avatarPreviewWidth);
+    */
+    
+    /*
+    // Hide the default viewfinder
+    wrapView.roundBorderView.hidden = YES;
+    // Configure your own viewfinder view or layer
+     */
+}
+
+- (void)willPlayAudio:(NSString *)audioName
+{
+    [_util playAudio:audioName lprojName:_language];
+}
+
+- (void)rnViewDidLoad
+{
+    _pre_key = nil;
+    _isReady = NO;
+    _isRequestingAuth = NO;
+    _requestAuthSucceed = NO;
+    _requestAuthComplete = NO;
+    _requestAuthCached = NO;
+    _isFlowFinished = NO;
+    
+    _util = [[AAILivenessUtil alloc] init];
+    
+    // Config model file path
+    NSString *modelPath = [[NSBundle mainBundle] pathForResource:@"AAIModel.bundle" ofType:NULL];
+    if (modelPath == NULL) {
+        modelPath = [[NSBundle bundleForClass:[self class]] pathForResource:@"AAIModel.bundle" ofType:NULL];
+    }
+    if (modelPath == NULL) {
+        NSLog(@"ERROR: AAIModel.bundle Not Found!");
+        return;
+    }
+    [AAILivenessSDK configModelBundlePath: modelPath];
+    
+    UIView *sv = self;
+    AAILivenessWrapView *wrapView = [[AAILivenessWrapView alloc] init];
+    [sv addSubview:wrapView];
+    
+    [self livenessWrapViewDidLoad:wrapView];
+    
+    wrapView.wrapDelegate = self;
+    _wrapView = wrapView;
+    
+    [self loadAdditionalUI];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(restartDetection) name:@"kAAIRestart" object:nil];
+    [[AVAudioSession sharedInstance] addObserver:self forKeyPath:@"outputVolume" options:NSKeyValueObservingOptionNew context:nil];
+    
+    [_util saveCurrBrightness];
+    
+    [self startPrepareStageTimer];
+    [self startCamera];
+}
+
+- (void)rnViewDidLayoutSubviews
+{
+    // Do not modify begin
+    CGRect rect = self.frame;
+    _wrapView.frame = rect;
+    
+    [self livenessWrapViewWillLayout:_wrapView];
+    [_wrapView setNeedsLayout];
+    [_wrapView layoutIfNeeded];
+    
+    CGRect tmpFrame = _wrapView.roundBorderView.frame;
+    _roundViewFrame = [_wrapView.roundBorderView.superview convertRect:tmpFrame toView:self];
+    // Do not modify end
+    
+    [self layoutAdditionalUI];
+}
+
 - (void)graduallySetBrightness:(CGFloat)brightness
 {
     [_util graduallySetBrightness:brightness];
 }
 
 - (void)graduallyResumeBrightness
+{
+    [_util graduallyResumeBrightness];
+}
+
+- (void)rnViewDidAppear
+{
+    [_util graduallySetBrightness:1];
+}
+
+- (void)rnViewWillDisappear
 {
     [_util graduallyResumeBrightness];
 }
@@ -253,7 +297,7 @@
     [self clearListener];
 }
 
-- (void)updateStateLabel:(NSString *)state
+- (void)updateStateLabel:(NSString * _Nullable)state key:(NSString * _Nullable)key
 {
     CGRect frame = _roundViewFrame;
     CGFloat w = frame.size.width;
@@ -306,15 +350,13 @@
     [_wrapView checkCameraPermissionWithCompletionBlk:^(BOOL authed) {
         if (!weakSelf) return;
         
-        //Alert no permission
-        NSString *state = [AAILivenessUtil localStrForKey:@"no_camera_permission" lprojName:weakSelf.language];
-        if (weakSelf.showHUD) {
-            [AAIHUD showMsg:state onView:weakSelf duration:1.5];
+        if (weakSelf.cameraPermissionDeniedBlk) {
+            weakSelf.cameraPermissionDeniedBlk(weakSelf);
         }
-        
-        // detection failed callback
-        NSDictionary *errorInfo = @{@"key": @"no_camera_permission", @"message": state, @"authed": @(authed)};
-        [RNAAILivenessSDKEvent postNotiToReactNative:@"onCameraPermission" body:errorInfo];
+        //Alert no permission
+        if (weakSelf.showHUD) {
+            [AAIHUD showMsg:[AAILivenessUtil localStrForKey:@"no_camera_permission" lprojName:weakSelf.language] onView:weakSelf duration:1.5];
+        }
     }];
 }
 
@@ -324,51 +366,66 @@
     _isReady = NO;
     _timeLabel.hidden = YES;
     
+    // Show HUD
     __weak typeof(self) weakSelf = self;
-    if (self.showHUD) {
+    if (_showHUD) {
         [AAIHUD showWaitWithMsg:[AAILivenessUtil localStrForKey:@"auth_check" lprojName:_language] onView:self];
     }
     
-    // begin request callback
-    [RNAAILivenessSDKEvent postNotiToReactNative:@"livenessViewBeginRequest" body:@{}];
+    // Begin request callback
+    if (self.beginRequestBlk) {
+        self.beginRequestBlk(self);
+    }
     
     NSTimeInterval authStartTime = [[NSDate date] timeIntervalSince1970];
     [_wrapView startAuthWithCompletionBlk:^(NSError * _Nonnull error) {
+        
+        // Dismiss HUD
         __strong RNAAILivenessView *strongSelf = weakSelf;
         if (strongSelf) {
             strongSelf.isRequestingAuth = NO;
             strongSelf.requestAuthComplete = YES;
             strongSelf.authRequestCostTime = [[NSDate date] timeIntervalSince1970] - authStartTime;
-            
-            // end request callback
-            [RNAAILivenessSDKEvent postNotiToReactNative:@"livenessViewEndRequest" body:@{}];
-            
+
             if (error) {
                 strongSelf.requestAuthSucceed = NO;
                 [strongSelf.prepareStageTimer invalidate];
-                
-                if (strongSelf.showHUD) {
-                    [AAIHUD dismissHUDOnView:strongSelf afterDelay:0];
-                }
-                
-                // error callback
-                NSString *transactionId = @"";
-                if (error.userInfo) {
-                    transactionId = error.userInfo[@"transactionId"];
-                    if (!transactionId) {
-                        transactionId = @"";
-                    }
-                }
-                NSDictionary *errorInfo = @{@"message": error.localizedDescription, @"code": @(error.code), @"transactionId": transactionId};
-                [RNAAILivenessSDKEvent postNotiToReactNative:@"onLivenessViewRequestFailed" body:errorInfo];
             } else {
                 strongSelf.requestAuthCached = YES;
                 strongSelf.requestAuthSucceed = YES;
-                if (strongSelf.showHUD) {
-                    [AAIHUD dismissHUDOnView:strongSelf afterDelay:0];
-                }
+            }
+            
+            if (strongSelf.showHUD) {
+                [AAIHUD dismissHUDOnView:strongSelf afterDelay:0];
             }
         }
+        
+        // End request callback
+        NSDictionary *errorInfo = nil;
+        if (error) {
+            NSString *transactionId = @"";
+            if (error.userInfo) {
+                transactionId = error.userInfo[@"transactionId"];
+                if (!transactionId) {
+                    transactionId = @"";
+                }
+            }
+            errorInfo = @{
+                @"message": error.localizedDescription,
+                @"code": @(error.code),
+                @"transactionId": transactionId
+            };
+        }
+        
+        if ((strongSelf != nil) && (strongSelf.endRequestBlk != nil)) {
+            strongSelf.endRequestBlk(strongSelf, errorInfo);
+        }
+        
+        // Detection failed callback
+        if (error) {
+            [self detectionDidFailed:errorInfo];
+        }
+        
     }];
 }
 
@@ -401,6 +458,7 @@
     _wrapView.roundBorderView.backgroundColor = [UIColor whiteColor];
     _hasPortraitDirection = NO;
     _requestAuthComplete = NO;
+    _isFlowFinished = NO;
     
     // Stop old timer and start a new timer
     [self startPrepareStageTimer];
@@ -436,8 +494,7 @@
                     
                     NSString *key = @"fail_reason_prepare_timeout";
                     NSString *state = [AAILivenessUtil localStrForKey:key lprojName:self.language];
-                    NSDictionary *errorInfo = @{@"key": key, @"message": state};
-                    [RNAAILivenessSDKEvent postNotiToReactNative:@"onDetectionFailed" body:errorInfo];
+                    [self detectionDidFailed: @{@"key": key, @"state": state}];
                 }
                 return;
             }
@@ -447,8 +504,7 @@
             
             NSString *key = @"fail_reason_prepare_timeout";
             NSString *state = [AAILivenessUtil localStrForKey:key lprojName:self.language];
-            NSDictionary *errorInfo = @{@"key": key, @"message": state};
-            [RNAAILivenessSDKEvent postNotiToReactNative:@"onDetectionFailed" body:errorInfo];
+            [self detectionDidFailed: @{@"key": key, @"state": state}];
         }
     } else {
         [self.prepareStageTimer invalidate];
@@ -485,28 +541,30 @@
     NSString *key = nil;
     if (detectionType == AAIDetectionTypeBlink) {
         key = @"pls_blink";
-        [_util playAudio:@"action_blink.mp3"];
+        [self willPlayAudio:@"action_blink.mp3"];
     } else if (detectionType == AAIDetectionTypeMouth) {
         key = @"pls_open_mouth";
-        [_util playAudio:@"action_open_mouth.mp3"];
+        [self willPlayAudio:@"action_open_mouth.mp3"];
     } else if (detectionType == AAIDetectionTypePosYaw) {
         key = @"pls_turn_head";
-        [_util playAudio:@"action_turn_head.mp3"];
+        [self willPlayAudio:@"action_turn_head.mp3"];
     }
     
     if (key) {
         NSString *state = [AAILivenessUtil localStrForKey:key lprojName:_language];
         _stateLabel.text = state;
         [self showImgWithType:detectionType];
-        // detection ready callback
-        NSDictionary *info = @{@"key": key, @"message": state};
-        [RNAAILivenessSDKEvent postNotiToReactNative:@"onDetectionReady" body:info];
+        
+        // Detection ready callback
+        if (self.detectionReadyBlk) {
+            self.detectionReadyBlk(self, detectionType, @{@"key": key, @"state": state});
+        }
     }
 }
 
 - (void)onDetectionFailed:(AAIDetectionResult)detectionResult forDetectionType:(AAIDetectionType)detectionType
 {
-    [_util playAudio:@"detection_failed.mp3"];
+    [self willPlayAudio:@"detection_failed.mp3"];
     [AAILocalizationUtil stopMonitor];
     
     //Reset
@@ -544,20 +602,39 @@
     //Show result page
     if (key) {
         NSString *state = [AAILivenessUtil localStrForKey:key lprojName:_language];
-        [self updateStateLabel:state];
+        [self updateStateLabel:state key:key];
         
         [_stateImgView stopAnimating];
         
-        // detection failed callback
-        NSDictionary *errorInfo = @{@"key": key, @"message": state};
-        [RNAAILivenessSDKEvent postNotiToReactNative:@"onDetectionFailed" body:errorInfo];
+        // Detection failed callback
+        [self detectionDidFailed: @{@"key": key, @"state": state}];
+    }
+}
+
+- (void)detectionDidFailed:(NSDictionary *)errorInfo
+{
+    // Avoid repeated call
+    if (_isFlowFinished) {
+        return;
+    }
+    _isFlowFinished = YES;
+    [self.prepareStageTimer invalidate];
+    
+    // Detection failed callback
+    if (self.detectionFailedBlk) {
+        self.detectionFailedBlk(self, errorInfo);
     }
 }
 
 - (BOOL)shouldDetect
 {
     if (_hasPortraitDirection == NO) {
-        _hasPortraitDirection = [AAILocalizationUtil isPortraitDirection];
+        if (_detectPhonePortraitDirection) {
+            _hasPortraitDirection = [AAILocalizationUtil isPortraitDirection];
+        } else {
+            _hasPortraitDirection = YES;
+        }
+        
         if (_hasPortraitDirection) {
             if (_requestAuthCached == NO && _isRequestingAuth == NO && _requestAuthComplete == NO) {
                 dispatch_sync(dispatch_get_main_queue(), ^{
@@ -571,29 +648,21 @@
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (self->_isReady == NO) {
                     self->_timeLabel.hidden = YES;
-                    self-> _voiceBtn.hidden = YES;
+                    self->_voiceBtn.hidden = YES;
                     self->_stateImgView.animationImages = nil;
                 }
-                
                 NSString *state = [AAILivenessUtil localStrForKey:@"pls_hold_phone_v" lprojName:self.language];
-                [self updateStateLabel:state];
-                
-                if (self->_pre_key == nil) {
-                    self->_pre_key = @"pls_hold_phone_v";
-                    
-                    // frame detected call back
-                    NSDictionary *info = @{@"key": @"pls_hold_phone_v", @"state": state};
-                    [RNAAILivenessSDKEvent postNotiToReactNative:@"onFrameDetected" body:info];
-                }
+                [self updateStateLabel:state key:@"pls_hold_phone_v"];
+                self->_pre_key = @"pls_hold_phone_v";
             });
         }
-        
+
         return NO;
     } else {
         if (_requestAuthCached == NO && _isRequestingAuth == NO  && _requestAuthComplete == NO) {
             dispatch_sync(dispatch_get_main_queue(), ^{
-                if (_requestAuthCached == NO && _isRequestingAuth == NO && _requestAuthComplete == NO) {
-                    [self updateStateLabel:nil];
+                if (_requestAuthCached == NO && _isRequestingAuth == NO  && _requestAuthComplete == NO) {
+                    [self updateStateLabel:nil key:nil];
                     [self requestAuth];
                 }
             });
@@ -605,8 +674,13 @@
 
 - (void)onFrameDetected:(AAIDetectionResult)result status:(AAIActionStatus)status forDetectionType:(AAIDetectionType)detectionType
 {
+    // Avoid repeated call
+    if (_isFlowFinished) {
+        return;
+    }
+    
     NSString *key = nil;
-    if (_isReady == NO && [AAILocalizationUtil isPortraitDirection] == NO) {
+    if (_isReady == NO && _detectPhonePortraitDirection && [AAILocalizationUtil isPortraitDirection] == NO) {
         key = @"pls_hold_phone_v";
     } else {
         switch (result) {
@@ -642,6 +716,10 @@
                 key = @"face_occ";
                 break;
             }
+            case AAIDetectionResultWarnEyeOcclusion: {
+                key = @"pls_open_eye";
+                break;
+            }
             default:
                 break;
         }
@@ -654,87 +732,110 @@
         _pre_key = key;
         
         NSString *state = [AAILivenessUtil localStrForKey:key lprojName:_language];
-        [self updateStateLabel:state];
+        [self updateStateLabel:state key:key];
         
-        // frame detected call back
-        NSDictionary *info = @{@"key": key, @"state": state};
-        [RNAAILivenessSDKEvent postNotiToReactNative:@"onFrameDetected" body:info];
+        // Frame detected callback
+        if (self.frameDetectedBlk) {
+            self.frameDetectedBlk(self, detectionType, status, result, @{@"key": key, @"state": state});
+        }
     }
 }
 
 - (void)onDetectionTypeChanged:(AAIDetectionType)toDetectionType
 {
+    // Avoid repeated call
+    if (_isFlowFinished) {
+        return;
+    }
+    
     NSString *key = nil;
     if (toDetectionType == AAIDetectionTypeBlink) {
         key = @"pls_blink";
-        [_util playAudio:@"action_blink.mp3"];
+        [self willPlayAudio:@"action_blink.mp3"];
     } else if (toDetectionType == AAIDetectionTypeMouth) {
         key = @"pls_open_mouth";
-        [_util playAudio:@"action_open_mouth.mp3"];
+        [self willPlayAudio:@"action_open_mouth.mp3"];
     } else if (toDetectionType == AAIDetectionTypePosYaw) {
         key = @"pls_turn_head";
-        [_util playAudio:@"action_turn_head.mp3"];
+        [self willPlayAudio:@"action_turn_head.mp3"];
     }
     
     if (key) {
         NSString *state = [AAILivenessUtil localStrForKey:key lprojName:_language];
-        [self updateStateLabel:state];
+        [self updateStateLabel:state key:key];
         [self showImgWithType:toDetectionType];
         
-        // detection type changed callback
-        NSDictionary *info = @{@"key": key, @"state": state};
-        [RNAAILivenessSDKEvent postNotiToReactNative:@"onDetectionTypeChanged" body:info];
+        // Detection type changed callback
+        if (self.detectionTypeChangedBlk) {
+            self.detectionTypeChangedBlk(self, toDetectionType, @{@"key": key, @"state": state});
+        }
     }
 }
 
 - (void)onDetectionComplete:(AAILivenessResult *)resultInfo
 {
-    [_util playAudio:@"detection_success.mp3"];
+    // Avoid repeated call
+    if (_isFlowFinished) {
+        return;
+    }
+    _isFlowFinished = YES;
+    
+    [self willPlayAudio:@"detection_success.mp3"];
     [AAILocalizationUtil stopMonitor];
     NSString *state = [AAILivenessUtil localStrForKey:@"detection_success" lprojName:_language];
-    [self updateStateLabel:state];
+    [self updateStateLabel:state key:@"detection_success"];
     [_stateImgView stopAnimating];
     _pre_key = nil;
     
-    NSData *imgData = UIImageJPEGRepresentation(resultInfo.img, 1.0f);
-    NSString *base64ImgStr = [imgData base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
-    NSDictionary *successInfo = @{
-            @"livenessId": resultInfo.livenessId,
-            @"img": base64ImgStr,
-            @"transactionId": (resultInfo.transactionId == nil ? @"":resultInfo.transactionId)
-        };
-    [RNAAILivenessSDKEvent postNotiToReactNative:@"onDetectionComplete" body:successInfo];
+    // Detection success callback
+    if (self.detectionSuccessBlk) {
+        self.detectionSuccessBlk(self, resultInfo);
+    }
 }
 
 - (void)onDetectionRemainingTime:(NSTimeInterval)remainingTime forDetectionType:(AAIDetectionType)detectionType
 {
+    // Avoid repeated call
+    if (_isFlowFinished) {
+        return;
+    }
+    
     if (_isReady) {
         _timeLabel.hidden = NO;
         _voiceBtn.hidden = NO;
         _timeLabel.text = [NSString stringWithFormat:@"%.f S", remainingTime];
+        
+        // Detection remaining time callback
+        if (self.detectionRemainingTimeBlk) {
+            self.detectionRemainingTimeBlk(self, detectionType, remainingTime);
+        }
     }
 }
 
 - (void)livenessViewBeginRequest:(AAILivenessWrapView * _Nonnull)param
 {
-    if (self.showHUD) {
+    // Show HUD
+    if (_showHUD) {
         [AAIHUD showWaitWithMsg:[AAILivenessUtil localStrForKey:@"auth_check" lprojName:_language] onView:self];
     }
     
-    [self updateStateLabel:nil];
+    [self updateStateLabel:nil key:nil];
     [_stateImgView stopAnimating];
     
-    // begin request callback
-    [RNAAILivenessSDKEvent postNotiToReactNative:@"livenessViewBeginRequest" body:@{}];
+    // Begin request callback
+    if (self.beginRequestBlk) {
+        self.beginRequestBlk(self);
+    }
 }
 
 - (void)livenessView:(AAILivenessWrapView *)param endRequest:(NSError * _Nullable)error
 {
-    if (self.showHUD) {
+    // Dismiss HUD
+    if (_showHUD) {
         [AAIHUD dismissHUDOnView:self afterDelay:0];
     }
     
-    // end request callback
+    // End request callback
     NSDictionary *errorInfo = nil;
     if (error) {
         NSString *transactionId = @"";
@@ -744,16 +845,20 @@
                 transactionId = @"";
             }
         }
-
-        errorInfo = @{@"message": error.localizedDescription, @"code": @(error.code), @"transactionId": transactionId};
-    } else {
-        errorInfo = @{};
+        errorInfo = @{
+            @"message": error.localizedDescription,
+            @"code": @(error.code),
+            @"transactionId": transactionId
+        };
     }
-    [RNAAILivenessSDKEvent postNotiToReactNative:@"livenessViewEndRequest" body:errorInfo];
     
-    // error callback
+    if (self.endRequestBlk) {
+        self.endRequestBlk(self, errorInfo);
+    }
+    
+    // Detection failed callback
     if (error) {
-        [RNAAILivenessSDKEvent postNotiToReactNative:@"onLivenessViewRequestFailed" body:errorInfo];
+        [self detectionDidFailed: errorInfo];
     }
 }
 

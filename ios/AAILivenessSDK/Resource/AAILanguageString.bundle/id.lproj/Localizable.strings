@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "Silakan berkedip";
+"pls_open_eye" = "tolong buka matamu";
 "pls_open_mouth" = "Mohon buka dan tutup mulut Anda";
 "pls_turn_head" = "Silakan tengok kiri atau kanan (<30 derajat)";
 "pls_hold_phone_v" = "Mohon pegang telepon dengan tegak";

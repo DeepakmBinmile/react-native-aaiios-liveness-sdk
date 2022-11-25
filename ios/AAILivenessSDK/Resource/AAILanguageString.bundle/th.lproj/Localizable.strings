@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "กรุณากระพิบตา";
+"pls_open_eye" = "กรุณาเปิดตาของคุณ";
 "pls_open_mouth" = "กรุณาเปิดปากหลังจากนั้นปิดปาก";
 "pls_turn_head" = "กรุณาหมุนหัวไปทางขวาหรือซ้าย (<30องศา)";
 "pls_hold_phone_v" = "โปรดถือโทรศัพท์ในแนวตั้งตรง";

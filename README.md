@@ -1,4 +1,4 @@
-# react-native-aaiios-liveness-sdk(v1.2.9)
+# react-native-aaiios-liveness-sdk(v1.3.3)
 
 ## Running the example app
 
@@ -71,6 +71,7 @@ If your react-navive version >= 0.60, you can refer this part to intergrate `rea
    - `CoreMotion.framework`
    - `SystemConfiguration.framework`
    - `CoreTelephony.framework`
+   - `Accelerate.framework`
 
 <div><img src="./imgs/img-framework.jpg" width="800px"  /></div>
 
@@ -368,3 +369,15 @@ const styles = StyleSheet.create({
 
 ### v1.2.9
 1. Support setting `language` and `prepareTimeoutInterval`.
+
+### v1.2.9.1
+1. Fixed the bug that the audio could not be automatically switched with the language.
+
+### v1.3.3
+1. Optimizing the capture of face image.
+2. Support closed eye detection.
+3. Add localized string "pls_open_eye".
+4. Fix EXC_BAD_ACCESS bug that could occur in some cases.
+5. Fix the global service bug.
+6. Compressed images of AAIImgs.bundle.
+7. Removed 'android' folder.

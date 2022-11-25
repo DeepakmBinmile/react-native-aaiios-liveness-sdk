@@ -6,6 +6,7 @@
   Copyright © 2019 Advance.ai. All rights reserved.
 */
 "pls_blink" = "कृपया पलकें झपकाएँ";
+"pls_open_eye" = "कृपया अपनी आँखें खोलो";
 "pls_open_mouth" = "कृपया अपना मुंह खोलें और फिर बंद करें";
 "pls_turn_head" = "कृपया सिर को बाएँ या दाएँ घुमाएँ (<३० डिग्री)";
 "pls_hold_phone_v" = "कृपया फोन को सीधा रखें";

@@ -30,6 +30,7 @@ export default class AAIIOSLivenessView extends Component<{}> {
           }
         },
         onDetectionReady: (info) => {
+          // {"key": "xxx", "message": "xxx", "state": "xxx"}
            // console.log('onDetectionReady: ', info)
         },
         onFrameDetected: (info) => {
@@ -41,14 +42,14 @@ export default class AAIIOSLivenessView extends Component<{}> {
           // console.log('onDetectionTypeChanged: ', info)
         },
         onDetectionComplete: (info) => {
-          // {"livenessId": "xxx", "img": "xxx"}
+          // {"livenessId": "xxx", "img": "xxx", "transactionId": "xxx"}
           if (this.props.onDetectionComplete) {
               this.props.onDetectionComplete(info.livenessId, info.img)
           }
         },
         onDetectionFailed: (errorInfo) => {
             // Show alert view
-            // {"key": "xxx", "message": "xxx"}
+            // {"key": "xxx", "message": "xxx", "state": "xxx"}
             if (this.props.onDetectionFailed) {
                 this.props.onDetectionFailed(errorInfo.key, errorInfo.message)
             }
@@ -68,7 +69,7 @@ export default class AAIIOSLivenessView extends Component<{}> {
         },
         livenessViewEndRequest: (errorInfo) => {
           // Close loading view
-          // {"code": integer, "message": "xxx"}
+          // {}
           if (this.props.livenessViewEndRequest) {
             this.props.livenessViewEndRequest()
           }

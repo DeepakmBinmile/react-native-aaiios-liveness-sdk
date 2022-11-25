@@ -122,13 +122,14 @@
 
 + (NSString *)currLanForBundle:(NSBundle *)bundle
 {
-    NSString *availableLprojItems = @"en id vi zh-Hans th es ms hi";
+    NSArray *availableLprojItems = @[@"en", @"id", @"vi", @"zh-Hans", @"th", @"es", @"ms", @"hi"];
     NSString *currLproj = [self currLanguageKey];
-    if ([availableLprojItems containsString:currLproj]) {
-        return currLproj;
-    } else {
-        return @"en";
+    for (NSString *item in availableLprojItems) {
+        if ([item isEqualToString:currLproj]) {
+            return currLproj;
+        }
     }
+    return @"en";
 }
 
 - (void)playAudio:(NSString *)audioName
@@ -177,7 +178,10 @@
     }
     NSString *pathComponent = [NSString stringWithFormat:@"/AAILanguageString.bundle/%@.lproj", lan];
     NSString *lprojPath = [bundle.bundlePath stringByAppendingPathComponent:pathComponent];
-    NSString *str =  [[NSBundle bundleWithPath:lprojPath] localizedStringForKey:key value:nil table:nil];
+    NSString *str = [[NSBundle bundleWithPath:lprojPath] localizedStringForKey:key value:nil table:nil];
+    if (str == nil) {
+        str = @"";
+    }
     return str;
 }
 
