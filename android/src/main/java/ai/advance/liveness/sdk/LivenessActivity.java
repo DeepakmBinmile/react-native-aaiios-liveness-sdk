@@ -1,4 +1,4 @@
-package ai.advance.liveness.sdk.activity;
+package ai.advance.liveness.sdk;
 
 import android.Manifest;
 import android.annotation.SuppressLint;

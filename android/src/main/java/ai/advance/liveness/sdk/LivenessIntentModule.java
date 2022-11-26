@@ -1,4 +1,4 @@
-package ai.advance.liveness.sdk.rn;
+package ai.advance.liveness.sdk;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -13,7 +13,7 @@ import com.facebook.react.bridge.ReactMethod;
 
 import ai.advance.liveness.lib.GuardianLivenessDetectionSDK;
 import ai.advance.liveness.lib.LivenessResult;
-import ai.advance.liveness.sdk.activity.LivenessActivity;
+import ai.advance.liveness.sdk.LivenessActivity;
 
 /**
  * createTime:2019-10-30

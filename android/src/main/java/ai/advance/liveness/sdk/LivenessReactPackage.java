@@ -1,4 +1,4 @@
-package ai.advance.liveness.sdk.rn;
+package ai.advance.liveness.sdk;
 
 
 import com.facebook.react.ReactPackage;

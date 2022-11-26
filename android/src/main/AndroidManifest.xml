@@ -4,7 +4,7 @@
     <application>
 
         <activity
-            android:name=".activity.LivenessActivity"
+            android:name=".LivenessActivity"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
